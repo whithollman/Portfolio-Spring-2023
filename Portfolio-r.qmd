@@ -1,0 +1,848 @@
+---
+title: "STAT 331 Portfolio"
+author: Whitney Hollman
+format: 
+  html:
+    theme: vapor
+    self-contained: true
+layout: margin-left
+editor: visual
+execute: 
+  eval: false
+  echo: true
+---
+
+[**Learning Objective Evidence:**]{.underline} The code chunks below, provide code I have written which I pulled from either a Lab or Challenge assignment. Twice I had to choose from a practice activity. Original location is commented in chunk section. Each code chunk demonstrates proficiency within the parameters of the specified learning targets of this class.
+
+# Data Wrangling
+
+#### **WD-1: I can import data from a *variety* of formats (e.g., csv, xlsx, txt, etc.).**
+
+-   `csv`
+
+```{r wd-1-csv}
+library(tidyverse)
+library(here)
+#This is from Lab5 or Lab2
+surveys <- read_csv(here("/Users/whitneyhollman/Library/Mobile Documents/com~apple~CloudDocs/Lab5/Lab5/Lab/surveys.csv"))
+```
+
+-   `xlsx`
+
+```{r wd-1-xlsx}
+#This is from practice activiy 4 of week 4. 
+military <- read_xlsx(here("/Volumes/palang/stat331
+                           /wk4/GovspendAc",
+                           "practice-activities",
+                                 "data", 
+                                 "gov_spending_per_capita.xlsx"), 
+                      sheet = "Share of Govt spending", 
+                      skip  = 7, 
+                      n_max = 199)
+```
+
+-   `txt`
+
+```{r wd-1-txt}
+#This is from Practice Activity 5.2 of Week 5. 
+message <- read_csv(here("/Volumes/palang/stat331/wk5/scrambled_message.txt"))
+str_to_lower(message)
+```
+
+#### **WD-2: I can select necessary columns from a dataset.**
+
+```{r wd-2}
+#This chunk is from Lab4 question 2.1. I need to remove unwanted columns. x1 is,
+#redundant, nor necessary. 
+avoca <- avoca |>
+  select(-...1)
+#removing the decimal points to make data conversions easier. 
+avoca <- avoca |>
+  mutate(plu4046 = round(plu4046),
+         plu4225 = round(plu4225),
+         plu4770 = round(plu4770),
+         `small bags` = round(`small bags`),
+         `large bags` = round(`large bags`),
+         `xlarge bags` = round(`xlarge bags`),
+         total_v = round(total_v),
+         `total bags`= round(`total bags`)
+  )
+```
+
+#### **WD-3: I can filter rows from a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
+
+-   numeric
+
+```{r wd-3-numeric}
+#Lab3 and section 2.1
+hipresult <- hippity |>
+  filter(numPreferredArtists | numOverallArtists) 
+ colSums(is.na(hipresult)
+         )
+```
+
+-   character -- specifically a string
+
+```{r wd-3-string}
+#Practice activity 5.2, question 3.2 in the Dataframe section. 
+message %>% 
+  filter(str_detect(Word, pattern = "\\w")) %>% 
+  count() 
+```
+
+-   factor
+
+```{r wd-3-factor}
+#Lab3
+avocado_reg <- data.frame(region = c(1,2,3,4,5))
+avocado$region = factor(avocado$region, levels = c(1,3,2,1,4), 
+                        labels = c("West",
+                        "Southcentral", "Plains", "TotalUS", "Northeast"))
+
+filter(avocado_reg, as.numeric(region) == 2)
+levels(avocado$region)
+# change the levels argument
+avocado_reg <- data.frame(region = c(1,2,3,4,5))
+avocado$region = factor(avocado$region, levels = c(2,3,3,1,4), 
+                        labels = c("Plains",
+            "Southcentral", "West", "TotalUS", "Northeast"))
+filter(avocado_reg, as.numeric(region) == 2)
+levels(avocado$region)
+```
+
+-   date
+
+```{r wd-3-date}
+q9 <- a_m_name |>
+  filter(Name %in% c("Alan", "Allen", "Allan")) |>
+  filter(State %in% c("CA", "PA")) |>
+  filter(Year %in% c("2000"))
+```
+
+**WD-4: I can modify existing variables and create new variables in a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
+
+-   numeric
+
+```{r wd-4-numeric}
+#Code from lab4, question 2
+str(military)
+#two columns with missing data: Notes|Reporting year, and the first two rows of the datatable. 
+n <- military$Notes
+n <- as.numeric(n)
+#I changed Notes from character to numeric.
+clean <- military |>
+  mutate(is_notes = ifelse(!is.na(report_yr), 
+                           report_yr = notes, FALSE) |>
+           group_by(Country)
+  )
+##renamed the columns...
+military <- military |>
+  rename("notes" = "Notes",
+         "report_yr" = "Reporting year")
+```
+
+-   character -- specifically a string
+
+```{r wd-4-string}
+#From practice activity 5.2 multiple chunks to to give context
+str_to_lower(message)
+str_subset(message$Word, pattern = "^m") 
+me <- str_flatten(message$Word, collapse = "")
+str_subset(message$Word, pattern = "^m")
+```
+
+-   factor
+
+```{r wd-4-factor}
+x <- factor(c("first", "second", "third", "fourth", "fifth", "sixth",
+          "seventh", "eight", "ninth", "tenth", "eleventh", "twelfth"))
+str(x)
+# Now to get the levels above 1 it will be x(-1)
+x[-1]
+```
+
+-   date
+
+```{r wd-4-date}
+suspects_fac <- factor(c("2018-01-29",
+                     "2018-03-21",
+                     "2018-07-13",
+                     "2018-11-14",
+                     "2018-12-13",
+                     "2018-11-09",
+                     "2018-09-02"))
+
+library(lubridate)
+suspect_dates <- ymd(suspects_fac)
+suspect_dates
+class(suspect_dates)
+```
+
+#### **WD-5: I can use mutating joins to combine multiple dataframes.**
+
+-   `left_join()`
+
+```{r wd-5-left}
+suspects2 <- suspects |>
+  select(c(suspects, occupation))
+suspects2
+
+suspects2 |>
+  filter(occupation == "actress") |>
+  left_join(suspects) |>
+  select(occupation)
+```
+
+-   `right_join()`
+
+```{r wd-5-right}
+suspects3 <- suspects |>
+  filter(occupation == "singer") |>
+  right_join(suspects) |>
+  select(occupation,suspects)
+```
+
+-   `inner_join()`
+
+```{r wd-5-inner}
+alan <- a_m_name |>
+  group_by(State, Year) |>
+filter(Name == "Alan")
+# Second Seperate table with only the "Allen" male babes grouped by states
+allen <- a_m_name |>
+  group_by(State, Year) |>
+  filter(Name == "Allen")
+# Third alan dataset
+allan <- a_m_name |>
+  group_by(State, Year) |>
+  filter(Name == "Allan")
+
+alan_s <- alan |>
+  inner_join(allen, by = c("State", "Year"))
+Allens <- allan |>
+  inner_join(alan_s, by = c("State", "Year"))
+print(Allens)
+```
+
+-   `full_join()`
+
+```{r wd-5-full}
+allan01 <- alan |>
+  full_join(allen, multiple = "all") |>
+  full_join(allan, multiple = "all")
+```
+
+#### **WD-6: I can use filtering joins to filter rows from a dataframe.**
+
+-   `semi_join()`
+
+```{r wd-6-semi}
+suspects01 |>
+  semi_join(suspects, join_by(occupation))
+```
+
+-   `anti_join()`
+
+```{r wd-6-anti}
+#Taken from Lab 4 Government Spending for question 4
+# Code for Q4
+anti_military <- military_clean |>
+  anti_join(cont_region, by = c("Country" = "Region")
+            ) 
+
+  new_anti <- anti_military |>
+  filter(
+    if_any(
+      contains(cont_region$Region))
+  )
+
+```
+
+#### **WD-7: I can pivot dataframes from long to wide and visa versa**
+
+-   `pivot_longer()`
+
+```{r wd-7-long}
+#Taken from government spending Lab 4 question 6. 
+long_military <- anti_military |>
+  pivot_longer(cols = '1988':'2019',
+               names_to = "Year", 
+               values_to = "Spending")
+```
+
+-   `pivot_wider()`
+
+```{r wd-7-wide}
+# Q 5.8 babynames data
+a_m_name <- babies |>
+  pivot_wider(
+    names_from = "Gender",
+    values_from = "Count",
+    values_fill = 0
+  ) |>
+  print()
+a_m_name <- rename(a_m_name,
+       Male = "M")
+a_m_name
+## Only male babies assigned at birth
+a_m_name <- al_name |>
+  select(c("Name", "Year", "State","M")) |>
+  print()
+```
+
+# Reproducibility
+
+#### **R-1: I can create professional looking, reproducible analyses using RStudio projects, Quarto documents, and the here package.**
+
+I've done this in the following provided assignments:
+
+#### **R-2: I can write well documented and tidy code.**
+
+-   Example 1
+
+```{r r-2-1}
+# Q 4.5 from baby names data
+## code for only male babies with assigned monikers of "Allan, "alan, "Allen. Using the data set that I already pivoted for female allisons "al_name" 
+a_m_name <- babies |>
+  pivot_wider(
+    names_from = "Sex",
+    values_from = "Count",
+    values_fill = 0
+  ) |>
+  print()
+a_m_name <- rename(a_m_name,
+       "Male" = "M")
+a_m_name
+```
+
+-   Example 2
+
+```{r r-2-2}
+# From lab5
+#make sure the times are america los angerlos times. want to force time zone to match
+suspects <- suspects |>
+  mutate(time.spotted = ymd_hms(time.spotted),
+         time.spotted = force_tz(time.spotted, 
+                                 tzone = "America/Los_Angeles")
+         )
+
+#filtered to remove observations that were not spotted in the pm.  
+suspects01 <- suspects |>
+    filter(pm(time.spotted) == TRUE
+    )
+suspects01
+```
+
+#### **R-3: I can write robust programs that are resistant to changes in inputs.**
+
+-   Example 1
+
+```{r r-3-1}
+w <- fish$weight
+weight_c <- function(w) {
+  stopifnot(is.numeric(w))
+  
+  w_min <- w - min(w, na.rm = TRUE) 
+  w_max <- max(w, na.rm = TRUE) - min(w, na.rm = TRUE)
+
+w_min/w_max
+}
+```
+
+-   Example 2
+
+```{r r-3-2}
+xmas_gift <- function(x) {
+  if(!is.numeric(x) & !is.character(x)) {
+    return(FALSE)
+  } else if (is.character(x) & is.na(as.numeric(x))) {
+    return(FALSE)
+  }
+  return(TRUE)
+}
+```
+
+# Data Visualization & Sumarization
+
+#### **DVS-1: I can create visualizations for a *variety* of variable types (e.g., numeric, character, factor, date)**
+
+-   numeric variables
+
+```{r dvs-1-num}
+#This is taken from Lab5 question 2.1.  
+time_d <- surveys |>
+  group_by(genus) |>
+  summarize(weight = mean(weight, na.rm = TRUE),
+            year = mean(year, na.rm = TRUE)
+            )
+
+time_d |>
+  ggplot(aes(year)) +
+  geom_freqpoly(binwidth = 1) +
+labs(
+  x = "Weight over Study Duration",
+  y = "Mean Weight and Year"
+)
+```
+
+-   numeric variables and categorical variables
+
+```{r dvs-2-num-cat}
+#Taken from Lab question 4.2.
+ggplot(surveys, aes(fct_reorder(genus, weight), weight), 
+       .desc = TRUE) +
+geom_boxplot(aes(fill = genus)) +
+  scale_color_distiller() +
+  theme_minimal() +
+  labs(
+    title = "Genus Weight",
+    y = NULL,
+    x = NULL) +
+  coord_flip()+
+  theme(axis.text.y = element_text(size = .10))
+```
+
+-   categorical variables
+
+```{r dvs-2-cat}
+#This is two plots taken from Lab 3. They display demographic information.
+# Plot One
+ hipresult |>
+  ggplot(mapping = aes(x = age, fill = ethnic)) +
+  geom_boxplot() +
+  coord_flip() +
+  scale_fill_hue( limits = 
+                    c("african", "asian", "biracial", "native", "unkown",
+                      "white")) +
+  scale_color_brewer(palette = "Set1") +
+  theme_bw() +
+  labs( 
+    title = "Ethnicity & Age of Music Fans") +
+  theme(title = pink.bold.italic.text, axis.title = pink.bold.italic.text)
+  
+
+ #2nd Plot 
+hipresult |>
+ggplot(mapping = aes(x = numOverallArtists, y = popularityScore, 
+                     color = age)) +
+geom_point() +
+#scale_color_brewer(palette = "Set1") +
+ theme_classic() +
+labs(
+    title = "Age & Familiarity with Lyrics",
+    x = "Listener Populairty",
+    y = "Artist Total"
+  ) 
+```
+
+-   dates
+
+```{r dvs-2-date}
+q9 |>
+  ggplot(
+    mapping = aes(x = Year, y = State, 
+                  color = Name)) +
+  geom_point() +
+  geom_jitter() +
+  labs(
+    Title = "Popularity of Alan, Allen, Allan in CA and PA",
+    y = "Popularity of Name Variations by State",
+    x = "Year 2000") +
+  theme(legend.position = "bottom") +
+  theme_linedraw()
+```
+
+#### **DVS-2: I use plot modifications to make my visualization clear to the reader.**
+
+-   Example 1
+
+```{r dvs-2-1}
+#Lab 2-By using geom_jitter which can bring greater clarity to a busy plot
+ggplot( data = surveys,
+  mapping = aes(x= weight, y= hindfoot_length)) +
+  geom_point(mapping = aes(alpha = plot_id)) +
+  geom_jitter()
+```
+
+-   Example 2
+
+```{r dvs-2-2}
+#Lab-2 by creating lables and titles for the plot. 
+ggplot(data = surveys, mapping = aes( x =weight, y = hindfoot_length, group = 1))  +
+  geom_boxplot(outlier.shape = NA)+
+         geom_jitter(mapping = aes(alpha = plot_id, color = "green"))+
+ labs(title = "Penguin Study by Species") +
+  labs(x = "Weight of Penguins")+
+  labs(y= "The Hinderfoot of a Penguin")
+```
+
+#### **DVS-3: I show creativity in my visualizations**
+
+-   Example 1
+
+```{r dvs-3-1}
+allison_f |>
+  filter(Name == "Allison") |>
+  ggplot(aes(x = Year, y = Female, color = State)) +
+  geom_point(aes(alpha = 0.5)) +
+  geom_jitter() +
+ geom_smooth(method = "lm", formula = y ~ x) +
+  geom_smooth(method = 'loess') +
+  xlim(1995, 2015) +
+  scale_fill_manual(values = wes_palette("GrandBudapest1", n =4)) +
+  labs(
+    title = "Linear Model of Allison Popularity Over Time",
+    y = "Name Total Per Year",
+    x = "Year") 
+```
+
+-   Example 2
+
+```{r dvs-3-2}
+Allens |>
+  select(c(Year, State, aaa, naaa)) |>
+  ggplot(mapping = aes(x = Year, fill = State)) +
+         geom_boxplot() +
+  xlim(1995, 2015) +
+  theme_classic() +
+  labs(
+    title = "Popularity of Name Allen Over Time and Across the US",
+    y = "Name Total Per Year",
+    x = "Three Variations of Spelling: Allan-Alan-Allen") +
+ theme(legend.position = "left")
+  
+```
+
+#### **DVS-4: I can calculate numerical summaries of variables.**
+
+-   Example 1
+
+```{r dvs-4-1}
+#Lab3 section "Demographics of the study"
+hipresult |> Not a numerical summary
+  group_by(word) |>
+  summarize(word = n_distinct(word)) |>
+  arrange(desc(word)
+  ) 
+
+ distinct(hipresult, word)
+```
+
+-   Example 2
+
+```{r dvs-4-2}
+# lab 3 on avocado sales
+most_organic_hass <- major_region |>
+  group_by(region) |>
+  summarize(avg.hass = mean(plu4046, na.rm = TRUE),
+            avg.hass = mean(plu4225, na.rm = TRUE),
+            avg.hass = mean(plu4770, na.rm = TRUE)
+            ) |>
+  arrange(desc(avg.hass))
+View(most_organic_hass)
+```
+
+#### **DVS-5: I can find summaries of variables across multiple groups.**
+
+-   Example 1
+
+```{r dvs-5-1}
+#Lab 3 question 1.1
+sum(is.na.data.frame(hippity))
+colMeans(is.na(hippity))*100
+```
+
+-   Example 2
+
+```{r dvs-5-2}
+#summarize creates a new dataset, but is long and needs to be pivoted wider 
+a_name <- babies |>
+  group_by(Gender, State) |>
+ summarize(
+   n = n(),
+   .groups = "drop") |>
+  filter(n > 1L) |>
+  pivot_wider(
+    names_from = "Gender",
+    values_from = "Count",
+    values_fill = 0
+  ) |>
+  print()
+```
+
+#### **DVS-6: I can create tables which make my summaries clear to the reader.**
+
+-   Example 1
+
+```{r dvs-6-1}
+gt_10_percents|>
+  group_by(Name, State) |>
+  gt() |>
+  cols_label(
+    "%" = "Popularity %",
+    Name = "Name",
+    Year = "Year",
+    M = "Baby Count"
+  ) |>
+  cols_move_to_start(
+    columns = c("%")
+  ) |>
+  fmt_number(
+    columns = "%",
+    decimals = 3,
+    use_seps = FALSE
+  ) |>
+  tab_header(
+    title = md("**Dataset For Popularity of Alan, Allen, Allan by State**"),
+    subtitle = md("Year *exclusive* to 2000 Only in States PA, CA")
+  ) |>
+  tab_source_note(
+    source_note = "Source: STAT 331 course(2023) *Interactive Data
+    Analysis*. Dr. Theobold."
+  )
+
+```
+
+-   Example 2
+
+```{r dvs-6-2}
+allison_f |>
+  group_by(State) |>
+  filter(Name == "Allison") |>
+  gt() |>
+  cols_move_to_start(
+    columns = c(Year)
+  ) |>
+  tab_header(
+    title = md("**Dataset of Female Baby Names beginning with A**"),
+    subtitle = md("Data set *spans* the years 1997-2015")
+  ) |>
+  tab_source_note(
+    source_note = "Source: STAT 331 course(2023) *Interactive Data
+    Analysis*. Dr. Theobold."
+  ) 
+```
+
+#### **DVS-7: I show creativity in my tables.**
+
+-   Example 1
+
+```{r dvs-7-1}
+babies01 <- babies[c(1:100, 101:300, 500:1000), ]
+datatable(babies01, filter = 'top', option = list(
+  pagelength = 5, autoWidth = TRUE
+))
+```
+
+-   Example 2
+
+```{r dvs-7-2}
+allan01 |>
+  group_by(Name,State) |>
+  gt()|>
+  cols_label(
+    M = "Name Count"
+  ) |>
+  cols_move_to_start(
+    columns = c("M")
+  ) |>
+  cols_move_to_end(
+    columns = c("Year")
+  ) |>
+  tab_header(
+    title = md("**Name Allan Variation *over* Time & by State**"),
+    subtitle = md("Time *span* Years 1997-2015")
+  ) |>
+  tab_source_note(
+    source_note = "Source: STAT 331 course(2023) *Interactive Data
+    Analysis*. Dr. Theobold."
+  ) |>
+  tab_options(
+    column_labels.border.bottom.color = "black",
+    column_labels.border.top.color = "black",
+    table_body.border.bottom.color = "black",
+    table_body.hlines.color = "white"
+  ) |>
+  tab_options(table.font.size = px(18)) 
+```
+
+# Program Efficiency
+
+#### **PE-1: I can write concise code which does not repeat itself.**
+
+-   using a single function call
+
+```{r pe-1-one-call}
+s <- fish$size
+size_c <- function(s) {
+  stopifnot(is.numeric(s))
+
+s_min <- s - min(s, na.rm = TRUE)  
+  s_max <- max(s, na.rm = TRUE) - min(s, na.rm = TRUE)
+
+  s_min/s_max
+}  
+```
+
+-   `across()`
+
+```{r pe-1-across}
+avocado |> summarize(across(c("AveragePrice", "Total Volume"), list(mean=mean, sd=sd), na.rm = TRUE))
+```
+
+-   `map()` functions
+
+```{r pe-1-map-1}
+# from lab9 dataset babies
+q9 |> map(mean, na.rm = TRUE)
+```
+
+#### **PE-2: I can write functions to reduce repetition in my code.**
+
+-   Example 1
+
+```{r pe2-1}
+xmas <- xmas |>
+  select(c(Day, Day.in.Words, gifts, Verb, Adjective, Location)
+         )
+
+plural_gifts <- function(x) {
+x <- c(xmas$gifts)
+str_replace(x, "goose", "geese" )  
+gifts |> 
+  str_c("s", sep = "") |>
+  str_replace("ys$", "ies")  
+}
+```
+
+-   Example 2
+
+```{r pe2-2}
+make_phrase <- function(x) {
+
+  num <- if(xmas$Day.in.Words > 1) {
+  plural_gifts(x)
+} else {
+  plural_gifts()
+}
+      
+num_word <- xmas$Day.in.Words = with(xmas, 
+      ifelse(Day.in.Words > "first" %in%  c("a", "an")),
+      xmas$gifts)
+```
+
+#### **PE-3:I can use iteration to reduce repetition in my code.**
+
+-   `across()`
+
+```{r pe-3-across}
+df |> summarize(
+  n = n(),
+  across(a:d, median),
+)
+```
+
+-   `map()` functions (Provide 2 Examples)
+
+```{r pe-3-map-1}
+my_weights <- map_dbl(.x = 1:1000, 
+                      .f = ~ music_man(n_tromb = 76, 
+                                       n_cor = 110,
+                                       n_reed = 1035) 
+                      ) 
+```
+
+```{r pe-3-map-2}
+tibble(x = 1:1000) |>
+  map_dbl(~rnorm, mean = 0, sd = 1(.x))
+```
+
+#### **PE-4: I can use modern tools when carrying out my analysis.**
+
+-   Example 1
+
+```{r pe-4-1}
+# First Tool ggplot. Data from lab9 babies.
+q9 |>
+  ggplot(
+    mapping = aes(x = Year, y = State, 
+                  color = Name)) +
+  geom_point() +
+  geom_jitter() +
+  labs(
+    Title = "Popularity of Alan, Allen, Allan in CA and PA",
+    y = "Popularity of Name Variations by State",
+    x = "Year 2000") +
+  theme(legend.position = "bottom") +
+  theme_linedraw()
+
+```
+
+-   Example 2
+
+```{r pe-4-2}
+# Example of tidyr and data clean-up from lab4
+#remove unwanted columns. x1 is redundant and not necessary. 
+avoca <- avoca |>
+  select(-...1)
+#removing the decimal points to make data conversions easier. 
+avoca <- avoca |>
+  mutate(plu4046 = round(plu4046),
+         plu4225 = round(plu4225),
+         plu4770 = round(plu4770),
+         `small bags` = round(`small bags`),
+         `large bags` = round(`large bags`),
+         `xlarge bags` = round(`xlarge bags`),
+         total_v = round(total_v),
+         `total bags`= round(`total bags`)
+  )  
+```
+
+# Data Simulation & Probability Models
+
+#### **DSM-1: I can simulate data from a *variety* of probability models.**
+
+-   Example 1
+
+```{r dsm-1-1}
+qunif(.90, min = 1.5, max = 3.5, lower.tail = TRUE, log.p = FALSE)
+```
+
+-   Example 2
+
+```{r dsm-1-2}
+qchisq(p = 0.95, df = 4, lower.tail = FALSE)
+```
+
+#### **DSM-2: I can fit a linear regression and extract necessary summary measures.**
+
+-   Example 1
+
+```{r dsm-2-1}
+lm_allison <- lm(Year ~ Female, data = allison_f)
+coeffs = coefficients(lm_allison); coeffs
+# extract the parameters of the estimated model of regression equation to the function. 
+# Now fit the amount of female allisons using the estimated regression equation. 
+predict(lm_allison, allison_f)
+head(2)
+## Using the broom augment function:
+lm_allison |>
+  broom::augment() |>
+  ggplot(mapping = aes(y = .resid, x = .fitted)) +
+  geom_point()
+```
+
+-   Example 2
+
+```{r dsm-2-2}
+farbe_lm <- farbe |>
+  lm(weight_before ~ weight_after, data = _)
+```
+
+# My Thoughts Revized
+
+<!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
+
+# How to Further Extend My Thoughts
+
+<!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
